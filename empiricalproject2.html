@@ -1,0 +1,55 @@
+library(rdrobust)
+library(ggplot2)
+
+grade5<-read.csv('~/Desktop/EC 410/grade5.csv')
+
+#subset data [20,60]
+narrow <- subset(grade5, school_enrollment <= 60 & school_enrollment >= 20)
+
+#class size plot
+rdplot(narrow$classize, narrow$school_enrollment, c = 40.5, p = 1, nbins = 20, 
+       x.label = "Enrollment", y.label= "Class Size", title="Impact on Class Size")
+
+#math score plot
+rdplot(narrow$avgmath, narrow$school_enrollment, c = 40.5, p = 1, nbins = 20, 
+       x.label = "Enrollment", y.label= "Math Scores", title="Impact on Math Scores")
+
+#verbal score plot
+rdplot(narrow$avgverb, narrow$school_enrollment, c = 40.5, p = 1, nbins = 20, 
+       x.label = "Enrollment", y.label= "Verbal Scores", title="Impact on Verbal Scores")
+
+# subset of data
+narrow <- subset(grade5, school_enrollment <= 80)
+
+# indicator variable for school_enrollment above 40 
+narrow$above40 <- 0
+narrow$above40[which(narrow$school_enrollment > 40)] <- 1
+
+# centered enrollment
+narrow$x <- narrow$school_enrollment - 40
+
+# interaction term
+narrow$x_above <- narrow$above40 * narrow$x
+
+# regressions
+outcome1_regression <- lm(classize ~ above40 + x + x_above, data = narrow)
+
+outcome2_regression <- lm(avgmath ~ above40 + x + x_above, data = narrow)
+
+outcome3_regression <- lm(avgverb ~ above40 + x + x_above, data = narrow)
+
+# results and coefficients
+summary(outcome1_regression) 
+summary(outcome2_regression)
+summary(outcome3_regression)
+
+library(sandwich)
+
+cluster_outcome1 <- sqrt(diag(vcovCL(outcome1_regression, cluster = narrow$schlcode)))
+cluster_outcome2 <- sqrt(diag(vcovCL(outcome2_regression, cluster = narrow$schlcode)))
+cluster_outcome3 <- sqrt(diag(vcovCL(outcome3_regression, cluster = narrow$schlcode)))
+
+# Standard errors
+cluster_outcome1
+cluster_outcome2
+cluster_outcome3
